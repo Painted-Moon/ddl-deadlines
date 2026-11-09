@@ -1,0 +1,13 @@
+# Build output
+bin/
+obj/
+app/
+dist/
+
+# Editors
+.vs/
+.vscode/
+*.user
+
+# Machine-specific package cache location (see build.ps1)
+NuGet.config
