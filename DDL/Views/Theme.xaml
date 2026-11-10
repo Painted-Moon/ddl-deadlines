@@ -131,8 +131,8 @@
         </Setter>
     </Style>
 
-    <!-- Pill-shaped choice (reminder options). -->
-    <Style x:Key="ChipRadio" TargetType="RadioButton">
+    <!-- Pill that can be switched on and off (reminder times). -->
+    <Style x:Key="ChipToggle" TargetType="ToggleButton">
         <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
         <Setter Property="FontSize" Value="13" />
         <Setter Property="Margin" Value="0,0,6,6" />
@@ -140,7 +140,7 @@
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
         <Setter Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="RadioButton">
+                <ControlTemplate TargetType="ToggleButton">
                     <Border x:Name="Chip" CornerRadius="14" Padding="13,5" BorderThickness="1"
                             Background="{DynamicResource ControlFillColorDefaultBrush}"
                             BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}">

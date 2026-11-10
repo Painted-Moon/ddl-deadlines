@@ -239,6 +239,10 @@
                         <TextBlock Text="New deadline" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
+                <Button x:Name="ThemeButton" DockPanel.Dock="Right" VerticalAlignment="Top" Padding="10,9" Margin="0,0,8,0"
+                        Click="OnThemeClick" AutomationProperties.Name="Theme">
+                    <TextBlock x:Name="ThemeGlyph" Style="{StaticResource IconText}" FontSize="14" Text="&#xE770;" />
+                </Button>
                 <StackPanel>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock x:Name="ListTitle" FontFamily="{StaticResource DisplayFont}" FontSize="28" FontWeight="SemiBold" />

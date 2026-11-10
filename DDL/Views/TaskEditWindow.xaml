@@ -30,8 +30,24 @@
             </StackPanel>
         </Grid>
 
-        <TextBlock Text="Remind me before the deadline" Style="{StaticResource FieldLabel}" />
-        <WrapPanel x:Name="ReminderChips" AutomationProperties.Name="Reminder" />
+        <TextBlock Text="Remind me (pick any)" Style="{StaticResource FieldLabel}" />
+        <WrapPanel x:Name="ReminderChips" AutomationProperties.Name="Reminders" />
+
+        <!-- Opened by the "+ Custom" pill -->
+        <StackPanel x:Name="CustomPanel" Orientation="Horizontal" Visibility="Collapsed" Margin="0,0,0,8">
+            <TextBox x:Name="CustomAmountBox" Width="64" TextChanged="OnCustomAmountChanged"
+                     PreviewKeyDown="OnCustomAmountKeyDown" AutomationProperties.Name="Custom reminder amount" />
+            <ComboBox x:Name="CustomUnitBox" Width="112" Margin="8,0,0,0" SelectedIndex="1"
+                      AutomationProperties.Name="Custom reminder unit">
+                <ComboBoxItem Content="minutes" Tag="1" />
+                <ComboBoxItem Content="hours" Tag="60" />
+                <ComboBoxItem Content="days" Tag="1440" />
+            </ComboBox>
+            <TextBlock Text="before" Margin="8,0" VerticalAlignment="Center" />
+            <Button x:Name="AddCustomButton" Content="Add" MinWidth="64" IsEnabled="False" Click="OnAddCustomClick" />
+        </StackPanel>
+
+        <TextBlock x:Name="ReminderSummary" Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,0,0,0" />
 
         <TextBlock Text="Notes" Style="{StaticResource FieldLabel}" Margin="0,10,0,6" />
         <TextBox x:Name="NotesBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" MaxHeight="140"

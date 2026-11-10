@@ -2,7 +2,7 @@
 
 A small Windows app for keeping track of deadlines. It has a month calendar, reminders that arrive even when the app is closed, and an optional Outlook calendar that stays in sync.
 
-> **Status: early preview (v0.1).** It works day to day on Windows 11, but it has been tested on one machine and has no automated tests yet. Bug reports are welcome.
+> **Status: early preview (v0.2).** It works day to day on Windows 11, but it has been tested on one machine and has no automated tests yet. Bug reports are welcome.
 
 ![DDL main window](docs/screenshots/main-light.png)
 
@@ -10,11 +10,11 @@ A small Windows app for keeping track of deadlines. It has a month calendar, rem
 
 - **Deadlines at a glance.** Grouped into Overdue, Today, Tomorrow, Next 7 days and Later, each with a countdown ("in 3 h", "2 days overdue"). Completed ones fold away.
 - **Month calendar.** A dot for every deadline, colored by urgency. Click a day to see only its deadlines; double-click to add one on that day.
-- **Reminders that don't need the app running.** At the time, or 15 minutes, 1 hour or 1 day before. Windows delivers them even when DDL is closed, and clicking one opens that deadline.
+- **Reminders that don't need the app running.** Pick any combination (at the time, 15 minutes, 1 hour, 1 day before) or add your own, like 3 days or 45 minutes. Windows delivers them even when DDL is closed, and clicking one opens that deadline.
 - **Outlook sync (optional).** Your deadlines appear in their own Outlook calendar and update by themselves. See [Outlook sync](#outlook-sync).
 - **Tray icon and Start with Windows.** A red dot on the tray icon while something is overdue. Closing the window keeps DDL in the tray.
 - **Taskbar shortcuts.** Right-click the taskbar button for *New deadline* and *Quit DDL*.
-- **Windows 11 look.** Fluent design with Mica, in light and dark.
+- **Windows 11 look.** Fluent design with Mica. Choose Light, Dark or your Windows setting with the button next to *New deadline*.
 
 | Light | Dark |
 | --- | --- |
@@ -24,7 +24,7 @@ A small Windows app for keeping track of deadlines. It has a month calendar, rem
 
 ## Install
 
-1. Download `DDL-0.1.0-win-x64.zip` from [Releases](../../releases).
+1. Download the latest `DDL-<version>-win-x64.zip` from [Releases](../../releases).
 2. Unzip it into a folder you'll keep, for example `%LOCALAPPDATA%\Programs\DDL`, and run `DDL.exe`. There is no installer, and you don't need to install .NET.
 3. The app isn't code-signed yet, so Windows SmartScreen may warn you the first time: choose **More info → Run anyway**.
 

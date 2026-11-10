@@ -1,6 +1,8 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Threading;
 using DDL.Models;
 using DDL.Services;
@@ -44,6 +46,7 @@ public partial class MainWindow : Window
         _clock.Start();
         Activated += (_, _) => UpdateNotificationWarning();
         _feed.UploadFinished += () => Dispatcher.InvokeAsync(UpdateNotificationWarning);
+        UpdateThemeButton();
         Refresh();
     }
 
@@ -184,6 +187,46 @@ public partial class MainWindow : Window
         SyncStatus.Text = syncText;
         SyncStatus.SetResourceReference(TextBlock.ForegroundProperty, syncBrush);
         UpdateStartupStatus();
+    }
+
+    private static readonly (string Mode, string Label, string Glyph)[] ThemeChoices =
+    [
+        ("Light", "Light", ""),
+        ("Dark", "Dark", ""),
+        ("System", "Use Windows setting", ""),
+    ];
+
+    private void OnThemeClick(object sender, RoutedEventArgs e)
+    {
+        var menu = new ContextMenu { PlacementTarget = ThemeButton, Placement = PlacementMode.Bottom };
+        foreach (var (mode, label, glyph) in ThemeChoices)
+        {
+            var item = new MenuItem
+            {
+                Header = label,
+                IsCheckable = true,
+                IsChecked = _settings.Theme == mode,
+                Icon = new TextBlock { Text = glyph, FontSize = 14, FontFamily = (FontFamily)FindResource("IconFont") },
+            };
+            item.Click += (_, _) => SetTheme(mode);
+            menu.Items.Add(item);
+        }
+        menu.IsOpen = true;
+    }
+
+    private void SetTheme(string mode)
+    {
+        _settings.Theme = mode;
+        _settings.Save();
+        App.ApplyTheme(mode);
+        UpdateThemeButton();
+    }
+
+    private void UpdateThemeButton()
+    {
+        var choice = ThemeChoices.FirstOrDefault(c => c.Mode == _settings.Theme, ThemeChoices[^1]);
+        ThemeGlyph.Text = choice.Glyph;
+        ThemeButton.ToolTip = $"Theme: {choice.Label}";
     }
 
     private void OnStartupClick(object sender, RoutedEventArgs e)

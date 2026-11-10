@@ -72,7 +72,9 @@ public sealed class TaskStore
         try
         {
             var loaded = JsonSerializer.Deserialize<List<DdlTask>>(File.ReadAllText(_path), JsonOptions);
-            if (loaded is not null) _tasks.AddRange(loaded);
+            if (loaded is null) return;
+            foreach (var task in loaded) task.UpgradeLegacyReminder();   // files from DDL 0.1
+            _tasks.AddRange(loaded);
         }
         catch (JsonException)
         {

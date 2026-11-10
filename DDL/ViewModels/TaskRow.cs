@@ -22,8 +22,8 @@ public sealed class TaskRow : INotifyPropertyChanged
 
     public string Title => Model.Title;
     public bool IsCompleted => Model.IsCompleted;
-    public bool HasReminder => !Model.IsCompleted && Model.Reminder != ReminderOption.Off;
-    public string ReminderText => Model.Reminder.Title();
+    public bool HasReminder => !Model.IsCompleted && Model.ReminderMinutes.Count > 0;
+    public string ReminderText => Reminders.Summary(Model.ReminderMinutes);
     public bool HasNotes => !string.IsNullOrWhiteSpace(Model.Notes);
     public string NotesPreview => Model.Notes.Split('\n', 2)[0].Trim();
     public string ToggleLabel => Model.IsCompleted ? "Mark as not done" : "Mark as done";

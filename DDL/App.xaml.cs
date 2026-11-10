@@ -57,9 +57,6 @@ public partial class App : Application
         _quitRequest = new EventWaitHandle(false, EventResetMode.AutoReset, $@"Local\{key}-quit");
         _newRequest = new EventWaitHandle(false, EventResetMode.AutoReset, $@"Local\{key}-new");
 
-        // DDL_THEME=Light|Dark forces a theme (handy for checking both looks).
-        if (Environment.GetEnvironmentVariable("DDL_THEME") is { Length: > 0 } theme)
-            ThemeMode = new ThemeMode(theme);
         Resources.MergedDictionaries.Add(new ResourceDictionary
         {
             Source = new Uri("/DDL;component/Views/Theme.xaml", UriKind.Relative),
@@ -71,6 +68,8 @@ public partial class App : Application
         reminders.SyncAll(store.Tasks);
 
         var settings = AppSettings.Load(store.FolderPath);
+        // DDL_THEME=Light|Dark overrides the saved choice (handy for checking both looks).
+        ApplyTheme(Environment.GetEnvironmentVariable("DDL_THEME") is { Length: > 0 } forced ? forced : settings.Theme);
         var feed = _feed = new CalendarFeed(settings, CalendarFeed.DefaultPathFor(TaskStore.IsCustomLocation, store.FolderPath));
         store.Saved += () => feed.Publish(store.Tasks);
         feed.Publish(store.Tasks);
@@ -161,6 +160,15 @@ public partial class App : Application
             // a hint is not worth an error message
         }
     }
+
+    /// Switches the whole app between "Light", "Dark" and "System" (follow Windows) right away.
+    public static void ApplyTheme(string? mode) =>
+        Current.ThemeMode = mode switch
+        {
+            "Light" => ThemeMode.Light,
+            "Dark" => ThemeMode.Dark,
+            _ => ThemeMode.System,
+        };
 
     /// Tasks in the taskbar button's right-click menu. They start DDL.exe with an argument,
     /// which the running copy picks up.

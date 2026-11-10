@@ -17,6 +17,7 @@ public sealed class AppSettings
     public bool CalendarFeedIncludeCompleted { get; set; }
     public string? CalendarFeedPath { get; set; }          // local copy; null = default location
     public bool TrayHintShown { get; set; }                // "still running in the tray" shown once
+    public string Theme { get; set; } = "System";          // "Light", "Dark" or "System" (follow Windows)
 
     // Secret GitHub gist that Outlook subscribes to.
     public string? GistOwner { get; set; }
