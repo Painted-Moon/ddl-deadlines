@@ -59,7 +59,8 @@
         </Border>
 
         <DockPanel Margin="0,24,0,0" LastChildFill="False">
-            <Button x:Name="DeleteButton" DockPanel.Dock="Left" MinWidth="88" Click="OnDeleteClick"
+            <!-- Not named "DeleteButton": that's the Fluent TextBox's own clear (×) button. -->
+            <Button x:Name="DeleteDeadlineButton" DockPanel.Dock="Left" MinWidth="88" Click="OnDeleteClick"
                     Foreground="{DynamicResource SystemFillColorCriticalBrush}" AutomationProperties.Name="Delete">
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Style="{StaticResource IconText}" Text="&#xE74D;" FontSize="12" Margin="0,0,8,0" />

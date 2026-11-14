@@ -1,7 +1,8 @@
 <UserControl x:Class="DDL.Views.MonthCalendar"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="clr-namespace:DDL.ViewModels">
+             xmlns:vm="clr-namespace:DDL.ViewModels"
+             ClipToBounds="True">
 
     <UserControl.Resources>
         <DataTemplate x:Key="DotTemplate">

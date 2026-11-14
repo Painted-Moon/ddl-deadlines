@@ -13,7 +13,7 @@
     <AssemblyName>DDL</AssemblyName>
     <Product>DDL</Product>
     <AssemblyTitle>DDL</AssemblyTitle>
-    <Version>0.2.0</Version>
+    <Version>0.3.0</Version>
     <ApplicationIcon>Assets\ddl.ico</ApplicationIcon>
     <!-- Application.ThemeMode (Windows 11 Fluent look) is still marked experimental. -->
     <NoWarn>$(NoWarn);WPF0001</NoWarn>

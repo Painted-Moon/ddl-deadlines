@@ -30,6 +30,16 @@ public partial class MainWindow : Window
     private string _layoutKey = "";
     private TaskSection? _completedSection;
     private bool _completedExpanded;
+    private readonly HashSet<Guid> _leaving = [];   // cards currently animating out
+
+    /// How the list animates after it is rebuilt.
+    private enum ListMotion
+    {
+        None,       // clock ticks and other quiet updates
+        View,       // a different view: header and cards cascade in
+        Insert,     // a card arrived: it grows into place and glows
+        Highlight,  // a card changed: it glows
+    }
 
     public MainWindow(TaskStore store, ReminderScheduler reminders, AppSettings settings, CalendarFeed feed)
     {
@@ -39,8 +49,9 @@ public partial class MainWindow : Window
         _settings = settings;
         _feed = feed;
 
-        Calendar.SelectionChanged += (_, _) => RefreshList();
+        Calendar.SelectionChanged += (_, _) => RefreshList(ListMotion.View);
         Calendar.DayActivated += (_, day) => CreateTask(day);
+        Loaded += (_, _) => AnimateList(ListMotion.View, null);   // first time the window is shown
 
         _clock.Tick += OnClockTick;
         _clock.Start();
@@ -72,13 +83,13 @@ public partial class MainWindow : Window
     }
 
     /// Full refresh after tasks changed: calendar dots, counts and list.
-    private void Refresh()
+    private void Refresh(ListMotion motion = ListMotion.None, Guid? target = null)
     {
         Calendar.SetTasks(_store.Tasks);
-        RefreshList();
+        RefreshList(motion, target);
     }
 
-    private void RefreshList()
+    private void RefreshList(ListMotion motion = ListMotion.None, Guid? target = null)
     {
         var now = DateTime.Now;
         if (_completedSection is not null) _completedExpanded = _completedSection.IsExpanded;
@@ -130,6 +141,110 @@ public partial class MainWindow : Window
         AllClear.Visibility = visible.Count > 0 && open == 0 ? Visibility.Visible : Visibility.Collapsed;
 
         UpdateNotificationWarning();
+
+        if (motion != ListMotion.None && IsVisible)
+        {
+            UpdateLayout();   // create the new cards now so they can be animated
+            AnimateList(motion, target);
+        }
+    }
+
+    // ---- List animation ----
+
+    private async void AnimateList(ListMotion motion, Guid? target)
+    {
+        // Motion.* do nothing when animations are off; scrolling to a changed card still happens.
+        switch (motion)
+        {
+            case ListMotion.View:
+                Motion.Enter(ListHeader, dy: 6, durationMs: 200);
+                var step = 0;
+                foreach (var (header, cards) in SectionParts())
+                {
+                    if (header is not null) Motion.Enter(header, dy: 10, delayMs: Stagger(step++));
+                    foreach (var (card, _) in cards) Motion.Enter(card, dy: 14, delayMs: Stagger(step++));
+                }
+                if (EmptyState.IsVisible) Motion.Enter(EmptyState, dy: 10, delayMs: 40);
+                if (AllClear.IsVisible) Motion.Enter(AllClear, dy: 8);
+                break;
+
+            case ListMotion.Insert or ListMotion.Highlight when target is { } id:
+                if (FindCard(id) is not { } changed) return;
+                if (FindNamed<UIElement>(changed, "Glow") is { } glow) Motion.Glow(glow);
+                if (motion == ListMotion.Insert && Motion.Enabled)
+                {
+                    Motion.Expand(changed);
+                    await Task.Delay(300);   // scroll once it has its full height
+                }
+                changed.BringIntoView();
+                break;
+        }
+    }
+
+    /// Cards cascade 30 ms apart, capped so long lists don't keep you waiting.
+    private static int Stagger(int step) => Math.Min(step, 12) * 30;
+
+    /// Folds a card away (after an optional pause so a check mark can be seen first).
+    private async Task CollapseCard(Guid id, int pauseMs = 0)
+    {
+        if (FindCard(id) is not { } card) return;
+        card.IsHitTestVisible = false;
+        if (pauseMs > 0 && Motion.Enabled) await Task.Delay(pauseMs);
+        await Motion.Collapse(card);
+    }
+
+    /// Each section's header and its visible cards (the item containers), in screen order.
+    private IEnumerable<(FrameworkElement? Header, List<(FrameworkElement Card, TaskRow Row)> Cards)> SectionParts()
+    {
+        for (var i = 0; i < Sections.Items.Count; i++)
+        {
+            if (Sections.ItemContainerGenerator.ContainerFromIndex(i) is not FrameworkElement section) continue;
+            yield return (FindNamed<FrameworkElement>(section, "SectionHeader"), CardsIn(section).ToList());
+        }
+    }
+
+    private static IEnumerable<(FrameworkElement Card, TaskRow Row)> CardsIn(DependencyObject section)
+    {
+        if (FindNamed<ItemsControl>(section, "Cards") is not { } cards) yield break;
+        for (var i = 0; i < cards.Items.Count; i++)
+        {
+            if (cards.ItemContainerGenerator.ContainerFromIndex(i) is FrameworkElement card && cards.Items[i] is TaskRow row)
+                yield return (card, row);
+        }
+    }
+
+    private FrameworkElement? FindCard(Guid id)
+    {
+        foreach (var (_, cards) in SectionParts())
+        {
+            foreach (var (card, row) in cards)
+                if (row.Model.Id == id) return card;
+        }
+        return null;
+    }
+
+    private static T? FindNamed<T>(DependencyObject root, string name) where T : class
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            if (child is FrameworkElement { Name: var n } && n == name && child is T match) return match;
+            if (FindNamed<T>(child, name) is { } deeper) return deeper;
+        }
+        return null;
+    }
+
+    /// "Completed" opened or closed by the user: swing the arrow and cascade the cards in.
+    private void OnSectionToggled(object sender, RoutedEventArgs e)
+    {
+        if (sender is not ToggleButton { IsLoaded: true } toggle) return;   // ignore the initial binding
+        if (FindNamed<UIElement>(toggle, "Chevron") is { } chevron)
+            Motion.Turn(chevron, toggle.IsChecked == true ? -90 : 90);
+        if (toggle.IsChecked != true || ItemsControl.ContainerFromElement(Sections, toggle) is not FrameworkElement section) return;
+
+        section.UpdateLayout();
+        var step = 0;
+        foreach (var (card, _) in CardsIn(section)) Motion.Enter(card, dy: 10, delayMs: Stagger(step++), durationMs: 220);
     }
 
     private static List<TaskRow> Rows(IEnumerable<DdlTask> tasks, DateTime now) =>
@@ -218,7 +333,16 @@ public partial class MainWindow : Window
     {
         _settings.Theme = mode;
         _settings.Save();
-        App.ApplyTheme(mode);
+        Motion.CrossFade(RootGrid, () =>
+        {
+            // Switching themes rebuilds the scroll area and jumps it to the top; keep the reader's place
+            // (and keep the fading snapshot lined up with the new look).
+            var offset = ListScroll.VerticalOffset;
+            App.ApplyTheme(mode);
+            UpdateLayout();
+            ListScroll.ScrollToVerticalOffset(offset);
+            UpdateLayout();
+        });
         UpdateThemeButton();
     }
 
@@ -271,17 +395,17 @@ public partial class MainWindow : Window
         draft.ApplyTo(task);
         _store.Add(task);
         _reminders.Sync(task);
-        Refresh();
+        Refresh(ListMotion.Insert, task.Id);
     }
 
-    private void OpenEditor(DdlTask task)
+    private async void OpenEditor(DdlTask task)
     {
         var editor = new TaskEditWindow(task) { Owner = this };
         if (editor.ShowDialog() != true) return;
 
         if (editor.DeleteRequested)
         {
-            Delete(task);
+            await DeleteAnimated(task);
             return;
         }
         if (editor.Draft is not { } draft) return;
@@ -289,7 +413,7 @@ public partial class MainWindow : Window
         draft.ApplyTo(task);
         _store.Save();
         _reminders.Sync(task);
-        Refresh();
+        Refresh(ListMotion.Highlight, task.Id);
     }
 
     private void OnRowClick(object sender, RoutedEventArgs e)
@@ -300,20 +424,36 @@ public partial class MainWindow : Window
         if (RowOf(sender) is { } row) OpenEditor(row.Model);
     }
 
-    private void OnCheckChanged(object sender, RoutedEventArgs e)
+    private async void OnCheckChanged(object sender, RoutedEventArgs e)
     {
         e.Handled = true;
         if (sender is not CheckBox box || RowOf(sender) is not { } row) return;
 
         var isChecked = box.IsChecked == true;
         if (isChecked == row.Model.IsCompleted) return;   // set by data binding, not by the user
-        SetCompleted(row.Model, isChecked);
+        if (isChecked && box.Template.FindName("Mark", box) is UIElement mark) Motion.Pop(mark);
+        await SetCompletedAnimated(row.Model, isChecked, pauseMs: 180);
     }
 
-    private void OnToggleMenuClick(object sender, RoutedEventArgs e)
+    private async void OnToggleMenuClick(object sender, RoutedEventArgs e)
     {
         e.Handled = true;
-        if (RowOf(sender) is { } row) SetCompleted(row.Model, !row.Model.IsCompleted);
+        if (RowOf(sender) is { } row) await SetCompletedAnimated(row.Model, !row.Model.IsCompleted);
+    }
+
+    /// The card folds away, then reappears (growing in) in its new group.
+    private async Task SetCompletedAnimated(DdlTask task, bool completed, int pauseMs = 0)
+    {
+        if (!_leaving.Add(task.Id)) return;
+        try
+        {
+            await CollapseCard(task.Id, pauseMs);
+            SetCompleted(task, completed);
+        }
+        finally
+        {
+            _leaving.Remove(task.Id);
+        }
     }
 
     private void SetCompleted(DdlTask task, bool completed)
@@ -322,14 +462,28 @@ public partial class MainWindow : Window
         task.CompletedAt = completed ? DateTime.Now : null;
         _store.Save();
         _reminders.Sync(task);
-        Refresh();
+        Refresh(ListMotion.Insert, task.Id);
     }
 
-    private void OnDeleteClick(object sender, RoutedEventArgs e)
+    private async void OnDeleteClick(object sender, RoutedEventArgs e)
     {
         e.Handled = true;
         if (RowOf(sender) is { } row && Dialogs.ConfirmDelete(this, row.Title))
-            Delete(row.Model);
+            await DeleteAnimated(row.Model);
+    }
+
+    private async Task DeleteAnimated(DdlTask task)
+    {
+        if (!_leaving.Add(task.Id)) return;
+        try
+        {
+            await CollapseCard(task.Id);
+            Delete(task);
+        }
+        finally
+        {
+            _leaving.Remove(task.Id);
+        }
     }
 
     private void Delete(DdlTask task)

@@ -35,6 +35,7 @@ public partial class CalendarSyncWindow : Window
         _loading = false;
 
         _feed.UploadFinished += OnUploadFinished;
+        Motion.PopInOnLoad(this);
         UpdateView();
     }
 

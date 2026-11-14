@@ -46,13 +46,14 @@ public partial class TaskEditWindow : Window
         TimeBox.ItemsSource = Enumerable.Range(0, 48).Select(i => TimeSpan.FromMinutes(30 * i).ToString(@"hh\:mm")).ToList();
         TimeBox.Text = due.ToString("HH:mm", CultureInfo.InvariantCulture);
         BuildReminderChips();
-        DeleteButton.Visibility = task is null ? Visibility.Collapsed : Visibility.Visible;
+        DeleteDeadlineButton.Visibility = task is null ? Visibility.Collapsed : Visibility.Visible;
 
         Loaded += (_, _) =>
         {
             TitleBox.Focus();
             TitleBox.SelectAll();
         };
+        Motion.PopInOnLoad(this);
         Validate();
     }
 
@@ -93,6 +94,7 @@ public partial class TaskEditWindow : Window
         _customToggle.Checked += (_, _) =>
         {
             CustomPanel.Visibility = Visibility.Visible;
+            Motion.Enter(CustomPanel, dy: -6, durationMs: 160);
             CustomAmountBox.Focus();
         };
         _customToggle.Unchecked += (_, _) => CustomPanel.Visibility = Visibility.Collapsed;
@@ -137,6 +139,8 @@ public partial class TaskEditWindow : Window
         CustomAmountBox.Clear();
         CustomPanel.Visibility = Visibility.Collapsed;
         BuildReminderChips();
+        if (ReminderChips.Children.OfType<ToggleButton>().FirstOrDefault(c => c.Tag is int m && m == minutes) is { } added)
+            Motion.Pop(added, durationMs: 220);
     }
 
     /// Returns a problem to show, or null when the custom amount is usable.

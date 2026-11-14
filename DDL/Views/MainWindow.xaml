@@ -12,6 +12,21 @@
     </Window.CommandBindings>
 
     <Window.Resources>
+        <!-- The card's delete button fades in when it appears. -->
+        <Style x:Key="CardDeleteButton" TargetType="Button" BasedOn="{StaticResource IconButton}">
+            <Style.Triggers>
+                <Trigger Property="Visibility" Value="Visible">
+                    <Trigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.15" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </Trigger.EnterActions>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
         <!-- One deadline card. The whole card is a button: click or Enter opens the editor. -->
         <DataTemplate x:Key="TaskCardTemplate" DataType="{x:Type vm:TaskRow}">
             <Button x:Name="CardButton" Style="{StaticResource BareButton}" Click="OnRowClick" Margin="0,0,0,8"
@@ -25,10 +40,15 @@
                     </ContextMenu>
                 </Button.ContextMenu>
 
-                <Border x:Name="Card" CornerRadius="8" Padding="14,12,14,12" BorderThickness="1"
+                <Grid>
+                <Border x:Name="Card" CornerRadius="8" BorderThickness="1"
                         Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
                         BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
                     <Grid>
+                    <!-- Fades in on hover -->
+                    <Border x:Name="HoverLayer" CornerRadius="7" Opacity="0"
+                            Background="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                    <Grid Margin="14,12,14,12">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
@@ -68,12 +88,17 @@
                         </Border>
 
                         <!-- Takes the pill's place while the card is hovered or focused. -->
-                        <Button x:Name="DeleteButton" Grid.Column="2" Style="{StaticResource IconButton}" Content="&#xE74D;"
+                        <Button x:Name="DeleteButton" Grid.Column="2" Style="{StaticResource CardDeleteButton}" Content="&#xE74D;"
                                 Margin="0,-6,-6,-6" VerticalAlignment="Top" HorizontalAlignment="Right" Visibility="Collapsed"
                                 Click="OnDeleteClick" ToolTip="Delete"
                                 AutomationProperties.Name="{Binding DeleteAutomationName}" />
                     </Grid>
+                    </Grid>
                 </Border>
+                <!-- Brief accent ring for a new or just-edited card (animated from code) -->
+                <Border x:Name="Glow" CornerRadius="8" BorderThickness="2" Opacity="0" IsHitTestVisible="False"
+                        BorderBrush="{DynamicResource AccentFillColorDefaultBrush}" />
+                </Grid>
             </Button>
 
             <DataTemplate.Triggers>
@@ -92,9 +117,24 @@
                     <Setter TargetName="TitleText" Property="FontWeight" Value="Normal" />
                 </DataTrigger>
                 <Trigger SourceName="CardButton" Property="IsMouseOver" Value="True">
-                    <Setter TargetName="Card" Property="Background" Value="{DynamicResource CardBackgroundFillColorSecondaryBrush}" />
                     <Setter TargetName="DeleteButton" Property="Visibility" Value="Visible" />
                     <Setter TargetName="Pill" Property="Visibility" Value="Hidden" />
+                    <Trigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetName="HoverLayer" Storyboard.TargetProperty="Opacity"
+                                                 To="1" Duration="0:0:0.12" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </Trigger.EnterActions>
+                    <Trigger.ExitActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetName="HoverLayer" Storyboard.TargetProperty="Opacity"
+                                                 To="0" Duration="0:0:0.2" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </Trigger.ExitActions>
                 </Trigger>
                 <Trigger SourceName="CardButton" Property="IsKeyboardFocusWithin" Value="True">
                     <Setter TargetName="DeleteButton" Property="Visibility" Value="Visible" />
@@ -109,7 +149,7 @@
         <!-- A group of cards with its header. "Completed" can be collapsed. -->
         <DataTemplate x:Key="SectionTemplate" DataType="{x:Type vm:TaskSection}">
             <StackPanel Margin="0,0,0,6">
-                <Grid Margin="2,10,0,8">
+                <Grid x:Name="SectionHeader" Margin="2,10,0,8">
                     <StackPanel x:Name="PlainHeader" Orientation="Horizontal">
                         <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
@@ -117,6 +157,7 @@
                                    Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
                     </StackPanel>
                     <ToggleButton x:Name="FoldHeader" Visibility="Collapsed" IsChecked="{Binding IsExpanded}"
+                                  Checked="OnSectionToggled" Unchecked="OnSectionToggled"
                                   Cursor="Hand" HorizontalAlignment="Left" FocusVisualStyle="{x:Null}"
                                   AutomationProperties.Name="{Binding Title}">
                         <ToggleButton.Template>
@@ -134,7 +175,12 @@
                         </ToggleButton.Template>
                         <StackPanel Orientation="Horizontal">
                             <TextBlock x:Name="Chevron" Style="{StaticResource IconText}" Text="&#xE76C;" FontSize="10"
-                                       Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                       Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       RenderTransformOrigin="0.5,0.5">
+                                <TextBlock.RenderTransform>
+                                    <RotateTransform Angle="0" />
+                                </TextBlock.RenderTransform>
+                            </TextBlock>
                             <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold"
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                             <TextBlock Text="{Binding Count}" FontSize="13" Margin="8,0,0,0"
@@ -153,6 +199,7 @@
                 <DataTrigger Binding="{Binding IsExpanded}" Value="False">
                     <Setter TargetName="Cards" Property="Visibility" Value="Collapsed" />
                 </DataTrigger>
+                <!-- Arrow points down while open; code adds a short turn when the user clicks (OnSectionToggled). -->
                 <DataTrigger Binding="{Binding IsExpanded}" Value="True">
                     <Setter TargetName="Chevron" Property="Text" Value="&#xE70D;" />
                 </DataTrigger>
@@ -160,7 +207,7 @@
         </DataTemplate>
     </Window.Resources>
 
-    <Grid>
+    <Grid x:Name="RootGrid">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="328" />
             <ColumnDefinition Width="*" />
@@ -243,7 +290,7 @@
                         Click="OnThemeClick" AutomationProperties.Name="Theme">
                     <TextBlock x:Name="ThemeGlyph" Style="{StaticResource IconText}" FontSize="14" Text="&#xE770;" />
                 </Button>
-                <StackPanel>
+                <StackPanel x:Name="ListHeader">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock x:Name="ListTitle" FontFamily="{StaticResource DisplayFont}" FontSize="28" FontWeight="SemiBold" />
                         <Button x:Name="ShowAllButton" Style="{StaticResource LinkButton}" Content="Show all" Margin="10,4,0,0"
@@ -259,7 +306,7 @@
                 <TextBlock x:Name="NotificationWarningText" TextWrapping="Wrap" />
             </Border>
 
-            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Focusable="False">
+            <ScrollViewer x:Name="ListScroll" Grid.Row="2" VerticalScrollBarVisibility="Auto" Focusable="False">
                 <StackPanel Margin="32,0,26,16">
                     <Border x:Name="AllClear" Visibility="Collapsed" Margin="0,10,0,4" Padding="14,12" CornerRadius="8"
                             Background="{DynamicResource SystemFillColorSuccessBackgroundBrush}">

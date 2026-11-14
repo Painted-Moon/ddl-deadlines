@@ -41,9 +41,11 @@ public partial class MonthCalendar : UserControl
         var day = date?.Date;
         if (day is { } d && FirstOfMonth(d) != _month)
         {
+            var direction = FirstOfMonth(d) > _month ? 1 : -1;
             _month = FirstOfMonth(d);
             SelectedDate = day;
             Rebuild();
+            SlideIn(direction);
         }
         else
         {
@@ -87,8 +89,17 @@ public partial class MonthCalendar : UserControl
 
     private void ShowMonth(DateTime month)
     {
+        var direction = month > _month ? 1 : -1;
         _month = month;
         Rebuild();
+        SlideIn(direction);
+    }
+
+    /// The new month slides in from the side you're moving toward (+1 = later months, from the right).
+    private void SlideIn(int direction)
+    {
+        Motion.Enter(Days, dx: 28 * direction, dy: 0, durationMs: 220);
+        Motion.Enter(MonthTitle, dx: 14 * direction, dy: 0, durationMs: 200);
     }
 
     private static DateTime FirstOfMonth(DateTime d) => new(d.Year, d.Month, 1);

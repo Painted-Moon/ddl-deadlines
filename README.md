@@ -15,6 +15,7 @@ A small Windows app for keeping track of deadlines. It has a month calendar, rem
 - **Tray icon and Start with Windows.** A red dot on the tray icon while something is overdue. Closing the window keeps DDL in the tray.
 - **Taskbar shortcuts.** Right-click the taskbar button for *New deadline* and *Quit DDL*.
 - **Windows 11 look.** Fluent design with Mica. Choose Light, Dark or your Windows setting with the button next to *New deadline*.
+- **Smooth motion.** Views cascade in, months slide, new deadlines grow into place with a short glow, finished or deleted ones fold away, and themes cross-fade. Animations turn off automatically when *Animation effects* is off in Windows settings.
 
 | Light | Dark |
 | --- | --- |
@@ -83,6 +84,7 @@ cd ddl-deadlines
 For development:
 - `DDL_DATA_DIR=<folder>` uses a separate data folder. Such runs also use their own reminder group and their own single-instance lock, so they never touch your real deadlines or reminders.
 - `DDL_THEME=Light` or `Dark` forces a theme.
+- `DDL_NO_ANIMATION=1` turns all animations off.
 - `tools/make_icon.py` redraws the app icon (needs Pillow).
 
 Layout: `DDL/Models` (data), `DDL/Services` (storage, reminders, calendar publishing, auto-start), `DDL/ViewModels`, `DDL/Views` (WPF windows and the shared `Theme.xaml`).
